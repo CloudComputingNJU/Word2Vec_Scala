@@ -11,6 +11,7 @@ object WordTest {
     val sc = new SparkContext(conf)
 
     val input = sc.textFile("/home/hc/tmp/words.txt").map(line => line.split(" ").toSeq)
+
     input.foreach(s=>{
       println("string="+s);
     })
