@@ -35,7 +35,7 @@ object WordTest2 {
     val sparkConf = new SparkConf()
       .setAppName("WordTest2")
       .setMaster("local[2]")
-      .set("spark.mongodb.input.uri", "mongodb://114.212.243.98:27017/jd.all_words")
+      .set("spark.mongodb.input.uri", "mongodb://localhost:27017/jd.all_words")
     val sc = new SparkContext(sparkConf)
     val readConfig = ReadConfig(
       Map(
@@ -44,7 +44,7 @@ object WordTest2 {
     var count=0;
     val wordsMongoRDD = MongoSpark.load(sc, readConfig)
 
-    val filePath="/home/hc/tmp/words.txt";
+    val filePath="words.txt";
     /*wordsMongoRDD.take(100).foreach(s=>{
       println(s.get("words"));
 
@@ -70,32 +70,34 @@ object WordTest2 {
 
     val wordsLineRDD=wordsMongoRDD.take(100000).map(s=>s.get("words").toString()).map(s=>s.substring(1,s.length()-1).replace(","," "))
     val wordsRDD=wordsLineRDD.flatMap(s=>s.split(" ").seq);
-    //println("length="+wordsRDD.length);
     writeWordToTxt(wordsRDD,filePath);
+
+
     val input = sc.textFile(filePath).map(line => line.split(" ").toSeq)
 
     val word2vec = new Word2Vec();
 
     val model=word2vec.fit(input)
     val vector_map=model.getVectors;
-    println("mapSize="+vector_map.size);
-    val it=vector_map.iterator;
+
+    listWrite(vector_map,"kms_test.txt");
+
+
+    //println("mapSize="+vector_map.size);
+    /*val it=vector_map.iterator;
     while(it.hasNext){
       val vector_item=it.next();
       val v1=vector_item._1;
       val v2=vector_item._2;
-      println(v1+"|"+v2);
-    }
-    val synonyms = model.findSynonyms("赞", 5)
+      print(v1+"|");
+      listPrint(v2);
+      listWrite(v2,"kms_train.txt");
+      println()
+    }*/
+    /*val synonyms = model.findSynonyms("赞", 5)
     for((synonym, cosineSimilarity) <- synonyms) {
       println(s"$synonym $cosineSimilarity")
-    }
-
-
-
-
-
-
+    }*/
     //val model = word2vec.fit(wordsMongoRDD);
 
 
@@ -106,6 +108,22 @@ object WordTest2 {
       writer.print(str+" ")
     writer.close();
   }
+  def listPrint(arr:Array[Float]): Unit ={
+    for(f<-arr) print(f);
+  }
 
+  def listWrite(map: Map[String,Array[Float]],filePath:String): Unit ={
+    val writer=new PrintWriter(filePath);
+    var it=map.iterator;
+    while(it.hasNext) {
+      var arr=it.next()._2;
+      println("arr的长度是"+arr.length);
+      for (f <- arr) {
+        writer.print(f + ",")
+      }
+      writer.print("\n")
+    }
 
+    writer.close();
+  }
 }
